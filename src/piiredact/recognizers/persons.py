@@ -120,6 +120,22 @@ def is_plausible_person(name: str) -> bool:
     return title_shaped or caps_shaped
 
 
+def longest_plausible_person(value: str) -> str | None:
+    """Trim trailing tokens until what remains is a plausible name.
+
+    The name pattern is greedy and takes up to four title-case tokens, so in a
+    run-together table cell -- "Contact Person: Cherag Gyara Website: ..." with
+    the label stripped -- it grabs the following field's words too.  Rejecting
+    the whole match would lose a real name; trimming from the right recovers it.
+    """
+    tokens = list(re.finditer(r"\S+", value))
+    for end in range(len(tokens), 1, -1):
+        candidate = value[: tokens[end - 1].end()]
+        if is_plausible_person(candidate):
+            return candidate
+    return None
+
+
 class PersonRuleRecognizer:
     name = "person_rules"
     types = (PIIType.PERSON,)
@@ -131,10 +147,11 @@ class PersonRuleRecognizer:
 
         for rule_name, pattern, score in _RULES:
             for m in pattern.finditer(text):
-                start, end = m.span("name")
-                value = text[start:end]
-                if not is_plausible_person(value):
+                start = m.start("name")
+                value = longest_plausible_person(text[start : m.end("name")])
+                if value is None:
                     continue
+                end = start + len(value)
                 if (start, end) in seen:
                     continue
                 seen.add((start, end))

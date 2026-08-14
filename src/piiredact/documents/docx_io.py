@@ -32,14 +32,36 @@ from .segments import analyze_segments
 
 def iter_paragraphs(document: DocxDocument) -> Iterator[Paragraph]:
     """Every paragraph in the document body, tables (nested included), headers
-    and footers -- i.e. every place text can hide."""
-    yield from _iter_block_paragraphs(document)
+    and footers -- i.e. every place text can hide -- each yielded exactly once.
+
+    The de-duplication is essential, not cosmetic.  A merged table cell occupies
+    several grid positions, and ``row.cells`` returns the *same* ``<w:tc>`` once
+    per position: this filing yields 5,715 paragraphs from 4,639 distinct
+    elements.  Without the filter the rewriter applies one paragraph's
+    replacements several times over, the second pass using offsets that the
+    first pass already invalidated, and the text is destroyed
+    ("MEERA MOHAN IYER" -> "MEERA MOHAN IYERRA").
+
+    Elements are held in the ``seen`` set rather than their ``id()`` so the lxml
+    proxies stay alive and identity comparison stays meaningful.
+    """
+    seen: set = set()
+
+    def once(paragraphs: Iterator[Paragraph]) -> Iterator[Paragraph]:
+        for paragraph in paragraphs:
+            element = paragraph._p
+            if element in seen:
+                continue
+            seen.add(element)
+            yield paragraph
+
+    yield from once(_iter_block_paragraphs(document))
     for section in document.sections:
         for part in (section.header, section.footer,
                      section.even_page_header, section.even_page_footer,
                      section.first_page_header, section.first_page_footer):
             if part is not None:
-                yield from _iter_block_paragraphs(part)
+                yield from once(_iter_block_paragraphs(part))
 
 
 def _iter_block_paragraphs(container) -> Iterator[Paragraph]:

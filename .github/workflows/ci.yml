@@ -47,7 +47,7 @@ jobs:
     # The gold set is derived from a document that is not in the repository, so
     # this job only runs where that document is available.
     runs-on: ubuntu-latest
-    if: hashFiles('data/input/*.pdf') != ''
+    if: hashFiles('data/input/*.docx') != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

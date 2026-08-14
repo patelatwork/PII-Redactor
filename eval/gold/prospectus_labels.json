@@ -1,0 +1,476 @@
+{
+  "_about": [
+    "Hand-written ground truth for a stratified sample of the Red Herring Prospectus.",
+    "Each record names a source paragraph by its position in the document's paragraph",
+    "stream (`index`) and by its opening text (`anchor`). build_gold.py reads the .docx,",
+    "checks the anchor against the indexed paragraph, and resolves these labels to",
+    "character offsets -- so the labels below are the only hand-authored part, a",
+    "transcription error is impossible, and a label that is not present verbatim fails",
+    "the build loudly.",
+    "",
+    "Labelling policy (mirrors README, 'Precision choices we made deliberately'):",
+    "  * Company/registration identifiers (CIN, SEBI registration no., firm registration",
+    "    no.) are NOT PII - they identify a filing, not a person.",
+    "  * Names of regulators and exchanges (SEBI, BSE, NSE, Registrar of Companies) are NOT",
+    "    labelled as ORGANIZATION; they are public bodies, not private parties.",
+    "  * A paragraph is labelled ADDRESS when it carries a street-level locator (plot,",
+    "    building, village, street) OR a postal code. Word stores each table cell and each",
+    "    line as its own paragraph, so a single postal address is often split across two or",
+    "    three of them; each part that meets the rule is labelled separately.",
+    "  * A paragraph holding only a state and/or country ('Maharashtra, India') is NOT an",
+    "    address, and a bare city name is not either.",
+    "  * A designation ('Independent Director') is not PII; the person's name is.",
+    "  * 'occurrence' is 1-based and defaults to 1; whitespace in 'text' matches flexibly."
+  ],
+  "records": [
+    {
+      "index": 1011,
+      "anchor": "11/3, 11/4 and 11/5 Village Birdewadi",
+      "stratum": "cover",
+      "entities": [
+        {"type": "ADDRESS", "text": "11/3, 11/4 and 11/5 Village Birdewadi Chakan Taluka - Khed Pune – 410 501"}
+      ]
+    },
+    {
+      "index": 1012,
+      "anchor": "Maharashtra, India",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 1013,
+      "anchor": "201, Tower 2, Montreal Business Centre",
+      "stratum": "cover",
+      "entities": [
+        {"type": "ADDRESS", "text": "201, Tower 2, Montreal Business Centre, Off Pallod Farms, Baner Pune – 411 045"}
+      ]
+    },
+    {
+      "index": 1016,
+      "anchor": "Sarthak Malvadkar Company Secretary",
+      "stratum": "cover",
+      "entities": [
+        {"type": "PERSON", "text": "Sarthak Malvadkar"}
+      ]
+    },
+    {
+      "index": 1018,
+      "anchor": "Email: cs.connect@kshinternational.com",
+      "stratum": "cover",
+      "entities": [
+        {"type": "EMAIL", "text": "cs.connect@kshinternational.com"},
+        {"type": "PHONE", "text": "+ 91 20 45053237"}
+      ]
+    },
+    {
+      "index": 1020,
+      "anchor": "www.kshinternational.",
+      "stratum": "cover",
+      "entities": [
+        {"type": "URL", "text": "www.kshinternational. com"}
+      ]
+    },
+    {
+      "index": 1021,
+      "anchor": "OUR PROMOTERS: KUSHAL SUBBAYYA HEGDE",
+      "stratum": "cover",
+      "entities": [
+        {"type": "PERSON", "text": "KUSHAL SUBBAYYA HEGDE"},
+        {"type": "PERSON", "text": "PUSHPA KUSHAL HEGDE"},
+        {"type": "PERSON", "text": "RAJESH KUSHAL HEGDE"},
+        {"type": "PERSON", "text": "ROHIT KUSHAL HEGDE"},
+        {"type": "PERSON", "text": "RAKHI GIRIJA SHETTY"},
+        {"type": "ORGANIZATION", "text": "DHAULAGIRI FAMILY TRUST"},
+        {"type": "ORGANIZATION", "text": "EVEREST FAMILY TRUST"},
+        {"type": "ORGANIZATION", "text": "MAKALU FAMILY TRUST"},
+        {"type": "ORGANIZATION", "text": "BROAD FAMILY TRUST"},
+        {"type": "ORGANIZATION", "text": "ANNAPURNA FAMILY TRUST"},
+        {"type": "ORGANIZATION", "text": "KANCHENJUNGA FAMILY TRUST"}
+      ]
+    },
+    {
+      "index": 1022,
+      "anchor": "WATERLOO INDUSTRIAL PARK VI PRIVATE LIMITED",
+      "stratum": "cover",
+      "entities": [
+        {"type": "ORGANIZATION", "text": "WATERLOO INDUSTRIAL PARK VI PRIVATE LIMITED"}
+      ]
+    },
+
+    {
+      "index": 718,
+      "anchor": "Registered Office of our Company",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ORGANIZATION", "text": "KSH International Limited"}
+      ]
+    },
+    {
+      "index": 719,
+      "anchor": "11/3, 11/4 and 11/5, Village Birdewadi",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ADDRESS", "text": "11/3, 11/4 and 11/5, Village Birdewadi Chakan, Taluka-Khed"}
+      ]
+    },
+    {
+      "index": 720,
+      "anchor": "Pune – 410 501",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ADDRESS", "text": "Pune – 410 501"}
+      ]
+    },
+    {
+      "index": 722,
+      "anchor": "For details of change in our registered office",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 723,
+      "anchor": "Corporate Office of our Company",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ORGANIZATION", "text": "KSH International Limited"}
+      ]
+    },
+    {
+      "index": 725,
+      "anchor": "Pune 411 045 Maharashtra, India",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ADDRESS", "text": "Pune 411 045 Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 728,
+      "anchor": "Corporate identity number",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 730,
+      "anchor": "Our Company is registered with the Registrar of Companies",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 732,
+      "anchor": "PCNTDA Green Building",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ADDRESS", "text": "PCNTDA Green Building Block A 1st and 2nd floor Near Akurdi Railway Station Akurdi, Pune – 411 044 Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 734,
+      "anchor": "The following table sets out the brief details",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 738,
+      "anchor": "For brief profiles and further details",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 741,
+      "anchor": "Sarthak Malvadkar is our Company Secretary",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "PERSON", "text": "Sarthak Malvadkar"},
+        {"type": "ADDRESS", "text": "Gat No. 11/3, 11/4, 11/5, Village Birdewadi"}
+      ]
+    },
+    {
+      "index": 742,
+      "anchor": "Taluka Khed, District Pune – 410 501",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "ADDRESS", "text": "Taluka Khed, District Pune – 410 501"}
+      ]
+    },
+    {
+      "index": 744,
+      "anchor": "Telephone: + 91 20 45053237",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "PHONE", "text": "+ 91 20 45053237"}
+      ]
+    },
+    {
+      "index": 745,
+      "anchor": "E-mail: Sarthak.malvadkar@kshinterantional.com",
+      "stratum": "general_information",
+      "entities": [
+        {"type": "EMAIL", "text": "Sarthak.malvadkar@kshinterantional.com"}
+      ]
+    },
+    {
+      "index": 747,
+      "anchor": "Bidders may contact the Company Secretary",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 748,
+      "anchor": "All Offer-related grievances, other than that of Anchor Investors",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 749,
+      "anchor": "All Offer-related grievances of the Anchor Investors",
+      "stratum": "negative",
+      "entities": []
+    },
+
+    {
+      "index": 753,
+      "anchor": "Nuvama Wealth Management Limited",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "ORGANIZATION", "text": "Nuvama Wealth Management Limited"}
+      ]
+    },
+    {
+      "index": 754,
+      "anchor": "801-804, Wing A, Building No. 3 Inspire",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "ADDRESS", "text": "801-804, Wing A, Building No. 3 Inspire BKC G Block, Bandra Kurla Complex"}
+      ]
+    },
+    {
+      "index": 755,
+      "anchor": "Bandra East, Mumbai – 400 051",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "ADDRESS", "text": "Bandra East, Mumbai – 400 051 Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 756,
+      "anchor": "Telephone: +91 22 40094400",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "PHONE", "text": "+91 22 40094400"},
+        {"type": "EMAIL", "text": "ksh.ipo@nuvama.com"},
+        {"type": "URL", "text": "www.nuvama.com"}
+      ]
+    },
+    {
+      "index": 757,
+      "anchor": "Investor grievance E-mail: customerservice.mb@nuvama.com",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "EMAIL", "text": "customerservice.mb@nuvama.com"}
+      ]
+    },
+    {
+      "index": 758,
+      "anchor": "Contact person: Lokesh Shah",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "PERSON", "text": "Lokesh Shah"},
+        {"type": "PERSON", "text": "Soumavo Sarkar"}
+      ]
+    },
+    {
+      "index": 759,
+      "anchor": "SEBI registration no.: INM000013004",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 761,
+      "anchor": "ICICI Securities Limited ICICI Venture House",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "ORGANIZATION", "text": "ICICI Securities Limited"},
+        {"type": "ADDRESS", "text": "ICICI Venture House Appasaheb Marathe Marg Prabhadevi, Mumbai – 400 025 Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 762,
+      "anchor": "Telephone: +91 22 6807 7100",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "PHONE", "text": "+91 22 6807 7100"},
+        {"type": "EMAIL", "text": "ksh@icicisecurities.com"},
+        {"type": "URL", "text": "www.icicisecurities.com"},
+        {"type": "EMAIL", "text": "customercare@icicisecurities.com"}
+      ]
+    },
+    {
+      "index": 763,
+      "anchor": "Contact person: Kishan Rastogi",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "PERSON", "text": "Kishan Rastogi"},
+        {"type": "PERSON", "text": "Abhijit Diwan"}
+      ]
+    },
+    {
+      "index": 780,
+      "anchor": "Email: ksh.ipo@nuvama.com, prakash.boricha@nuvama.com",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "EMAIL", "text": "ksh.ipo@nuvama.com"},
+        {"type": "EMAIL", "text": "prakash.boricha@nuvama.com"},
+        {"type": "EMAIL", "text": "sheetal.parab@nuvama.com"}
+      ]
+    },
+    {
+      "index": 782,
+      "anchor": "Contact Person: Prakash Boricha",
+      "stratum": "intermediaries",
+      "entities": [
+        {"type": "PERSON", "text": "Prakash Boricha"}
+      ]
+    },
+
+    {
+      "index": 4295,
+      "anchor": "DIN",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 4297,
+      "anchor": "Kushal Subbayya Hegde",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Kushal Subbayya Hegde"}
+      ]
+    },
+    {
+      "index": 4298,
+      "anchor": "Chairman",
+      "stratum": "negative",
+      "entities": []
+    },
+    {
+      "index": 4299,
+      "anchor": "00135070",
+      "stratum": "board",
+      "entities": [
+        {"type": "DIN", "text": "00135070"}
+      ]
+    },
+    {
+      "index": 4300,
+      "anchor": "S. no. 245/ 104, Pushpakamal",
+      "stratum": "board",
+      "entities": [
+        {"type": "ADDRESS", "text": "S. no. 245/ 104, Pushpakamal, Deccan Gymkhana Society, lane no. 3 Prabhat Road, opposite PYC basketball court, Deccan Gymkhana, Pune – 411 004 Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 4301,
+      "anchor": "Rajesh Kushal Hegde",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Rajesh Kushal Hegde"}
+      ]
+    },
+    {
+      "index": 4303,
+      "anchor": "00114193",
+      "stratum": "board",
+      "entities": [
+        {"type": "DIN", "text": "00114193"}
+      ]
+    },
+    {
+      "index": 4304,
+      "anchor": "12 Buena Monte, NCL co-operative housing society",
+      "stratum": "board",
+      "entities": [
+        {"type": "ADDRESS", "text": "12 Buena Monte, NCL co-operative housing society, Panchvati, Pashan, Pune – 411 008, Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 4309,
+      "anchor": "Rakhi Girija Shetty",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Rakhi Girija Shetty"}
+      ]
+    },
+    {
+      "index": 4311,
+      "anchor": "03124510",
+      "stratum": "board",
+      "entities": [
+        {"type": "DIN", "text": "03124510"}
+      ]
+    },
+    {
+      "index": 4314,
+      "anchor": "Dinesh Hirachand Munot",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Dinesh Hirachand Munot"}
+      ]
+    },
+    {
+      "index": 4316,
+      "anchor": "00049801",
+      "stratum": "board",
+      "entities": [
+        {"type": "DIN", "text": "00049801"}
+      ]
+    },
+    {
+      "index": 4317,
+      "anchor": "Pratik Bunglow, Senapati Bapat Road",
+      "stratum": "board",
+      "entities": [
+        {"type": "ADDRESS", "text": "Pratik Bunglow, Senapati Bapat Road, behind Sahara Hotel, Shivajinagar, Model Colony, Pune – 411 016, Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 4318,
+      "anchor": "Ajay Shriram Patil",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Ajay Shriram Patil"}
+      ]
+    },
+    {
+      "index": 4322,
+      "anchor": "Ram Kumar Tiwari",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Ram Kumar Tiwari"}
+      ]
+    },
+    {
+      "index": 4325,
+      "anchor": "A-259, JK Road, Minal Residency",
+      "stratum": "board",
+      "entities": [
+        {"type": "ADDRESS", "text": "A-259, JK Road, Minal Residency, Huzur, Govindpura, Bhopal – 462 023, Madhya Pradesh, India"}
+      ]
+    },
+    {
+      "index": 4326,
+      "anchor": "Indu Jacob",
+      "stratum": "board",
+      "entities": [
+        {"type": "PERSON", "text": "Indu Jacob"}
+      ]
+    },
+    {
+      "index": 4329,
+      "anchor": "A29, Abhimanshree Society, Pashan Road",
+      "stratum": "board",
+      "entities": [
+        {"type": "ADDRESS", "text": "A29, Abhimanshree Society, Pashan Road, Pune – 411 008, Maharashtra, India"}
+      ]
+    }
+  ]
+}

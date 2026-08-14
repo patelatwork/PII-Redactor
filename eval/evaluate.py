@@ -31,6 +31,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from build_gold import document_paragraphs  # noqa: E402
 
 from piiredact import RedactionConfig, Redactor  # noqa: E402
 from piiredact.types import Entity  # noqa: E402
@@ -205,21 +208,18 @@ def predict(records: list[dict], redactor: Redactor, context: Path | None) -> li
         segmented = SegmentedText([r["text"] for r in records])
         return segmented.bucket(redactor.analyze(segmented.joined))
 
-    from piiredact.documents import pdf_io
-
-    blocks = pdf_io.extract_blocks(context)
-    segmented = SegmentedText(blocks)
+    paragraphs = document_paragraphs(context)
+    segmented = SegmentedText(paragraphs)
     buckets = segmented.bucket(redactor.analyze(segmented.joined))
-
-    by_text: dict[str, int] = {}
-    for i, block in enumerate(blocks):
-        by_text.setdefault(block, i)
 
     out = []
     for record in records:
-        index = by_text.get(record["text"])
-        if index is None:
-            raise ValueError(f"gold record {record['id']!r} not found in {context.name}")
+        index = record["index"]
+        if paragraphs[index] != record["text"]:
+            raise ValueError(
+                f"gold record {record['id']!r} no longer matches paragraph {index}; "
+                "re-run eval/build_gold.py"
+            )
         out.append(buckets[index])
     return out
 
@@ -308,9 +308,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ner-orgs", action="store_true", help="enable spaCy ORG detections")
     parser.add_argument("--out", type=Path, default=HERE / "results.json")
     parser.add_argument(
-        "--pdf",
+        "--docx",
         type=Path,
-        default=HERE.parent / "data" / "input" / "Red Herring Prospectus.docx.pdf",
+        default=HERE.parent / "data" / "input" / "Red Herring Prospectus.docx",
         help="source document, so the prospectus sample is scored in full context",
     )
     parser.add_argument(
@@ -326,11 +326,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.ner_orgs:
         config.ner_organizations = True
 
-    context = None if args.isolated or not args.pdf.exists() else args.pdf
+    context = None if args.isolated or not args.docx.exists() else args.docx
 
     results = []
     for name, ctx in (
         ("prospectus_gold.json", context),
+        ("holdout_gold.json", context),
         ("synthetic_gold.json", None),  # self-contained: no wider document exists
     ):
         path = GOLD_DIR / name

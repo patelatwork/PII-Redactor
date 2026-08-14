@@ -85,9 +85,12 @@ class UrlRecognizer(RegexRecognizer):
     pii_type = PIIType.URL
     types = (PIIType.URL,)
     score = 0.9
+    # A single space is tolerated before the final TLD: converting the source
+    # document to and from PDF inserts one when a hostname straddles a column
+    # break, and the filing's own cover page reads "www.kshinternational. com".
     pattern = re.compile(
         r"\b(?:https?://|www\.)[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)*"
-        r"\.(?:com|net|org|in|co\.in|io|gov|edu|biz|info)\b(?:/[^\s\"'<>]*)?",
+        r"\.[ ]?(?:com|net|org|in|co\.in|io|gov|edu|biz|info)\b(?:/[^\s\"'<>]*)?",
         re.IGNORECASE,
     )
 
@@ -118,7 +121,9 @@ class PhoneRecognizer:
     pii_type = PIIType.PHONE
     types = (PIIType.PHONE,)
 
-    _international = re.compile(r"\+\s?\d{1,3}(?:[\s\-.]?\s?\d{2,10}){1,5}(?!\d)")
+    # Parentheses around an area code are common in the Indian STD format
+    # ("+ 91 (20) 6729 5100") and in North American numbers.
+    _international = re.compile(r"\+\s?\d{1,3}(?:[\s\-.]?\s?\(?\d{2,10}\)?){1,5}(?!\d)")
     _labelled = re.compile(
         r"(?P<label>Tel(?:ephone|\.)?|Phone|Mobile|Mob\.?|Fax|Contact\s+(?:No|Number)|"
         r"Helpline|Landline)\s*(?:No\.?|Number)?\s*[:\-–]?\s*"
@@ -354,7 +359,12 @@ class DINContextRecognizer(RegexRecognizer):
         r"(?:Chairman|Managing\s+Director|Joint\s+Managing\s+Director|"
         r"Whole[\s\-]?time\s+Director|Executive\s+Director|Independent\s+Director|"
         r"Non[\s\-]?Executive\s+Director|Nominee\s+Director|Additional\s+Director|"
-        r"Director)\s*\n?\s*(?P<num>\d{6,8}(?:\s*\n\s*\d{1,2})?)(?!\d)",
+        # The continuation after a wrap may cross a single line break but never a
+        # blank line: in a .docx each table cell is its own paragraph, and a
+        # greedy `\s*` would swallow the first digits of the *next* cell
+        # ("00114193" + the "12" that starts "12 Buena Monte").
+        r"Director)\s*\n?\s*"
+        r"(?P<num>\d{6,8}(?:[^\S\n]*\n(?!\s*\n)[^\S\n]*\d{1,2})?)(?!\d)",
         re.IGNORECASE,
     )
 

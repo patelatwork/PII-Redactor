@@ -43,6 +43,7 @@ PUBLIC_INSTITUTION_ALLOWLIST: frozenset[str] = frozenset(
         "Government of India",
         "Income Tax Department",
         "Institute of Chartered Accountants of India",
+        "Institute of Chartered Accountants",
         "ICAI",
         "Supreme Court of India",
         "High Court",

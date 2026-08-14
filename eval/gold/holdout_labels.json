@@ -1,0 +1,175 @@
+{
+  "_about": [
+    "HELD-OUT ground truth. Unlike prospectus_labels.json, this sample was drawn AFTER",
+    "the detectors were finished and was never used to tune them. Nothing in the pipeline",
+    "was changed in response to the numbers it produces -- that is the entire point of it.",
+    "",
+    "Why it exists: the main prospectus sample was used iteratively during development",
+    "(measure -> find defect -> fix -> measure), which makes it a development set. Scores",
+    "on a development set are optimistic by construction. This suite is the honest check.",
+    "",
+    "How it was drawn, verbatim and reproducible:",
+    "  stratum 'random'  - random.Random(20260814).sample() over every paragraph of 25-400",
+    "                      characters outside the regions already inspected during",
+    "                      development (indices 715-800, 1005-1025, 4290-4335). 30 drawn.",
+    "  stratum 'contact' - random.Random(7).sample() over the same pool filtered to",
+    "                      paragraphs containing '@', 'Telephone', 'Contact Person' or a",
+    "                      PIN-and-state pattern. 12 drawn, 2 discarded as duplicates of",
+    "                      the random draw.",
+    "The random draw is ~87% negatives, which is what this document actually looks like,",
+    "so it measures precision well and recall thinly; the contact draw supplies the recall",
+    "signal. Neither was cherry-picked -- the seeds are above and the pools are stated.",
+    "",
+    "Labelling policy is identical to prospectus_labels.json."
+  ],
+  "records": [
+    {"index": 122, "anchor": "“U.S $”, “U.S. Dollar”", "stratum": "random", "entities": []},
+    {"index": 187, "anchor": "**The number is negligible", "stratum": "random", "entities": []},
+    {"index": 204, "anchor": "(₹ in million, except per share data)", "stratum": "random", "entities": []},
+    {"index": 243, "anchor": "Summary of related party transactions", "stratum": "random", "entities": []},
+    {
+      "index": 276,
+      "anchor": "**  As certified by Kirtane & Pandit LLP",
+      "stratum": "random",
+      "entities": [
+        {"type": "ORGANIZATION", "text": "Kirtane & Pandit LLP"}
+      ]
+    },
+    {"index": 325, "anchor": "our customers will place further orders", "stratum": "random", "entities": []},
+    {"index": 524, "anchor": "The actual production capacity", "stratum": "random", "entities": []},
+    {"index": 596, "anchor": "Some of our properties", "stratum": "random", "entities": []},
+    {"index": 677, "anchor": "Any variation in the utilization", "stratum": "random", "entities": []},
+    {"index": 680, "anchor": "We may be susceptible to liabilities", "stratum": "random", "entities": []},
+    {
+      "index": 841,
+      "anchor": "Telephone: +91 22 30752929",
+      "stratum": "random",
+      "entities": [
+        {"type": "PHONE", "text": "+91 22 30752929"},
+        {"type": "PHONE", "text": "+91 22 30752928"},
+        {"type": "PHONE", "text": "+91 22 30752914"}
+      ]
+    },
+    {
+      "index": 924,
+      "anchor": "Email: rm6.ifbpune@sbi.co.in",
+      "stratum": "random",
+      "entities": [
+        {"type": "EMAIL", "text": "rm6.ifbpune@sbi.co.in"}
+      ]
+    },
+    {"index": 1072, "anchor": "ISSUER’S AND PROMOTER SELLING SHAREHOLDERS", "stratum": "random", "entities": []},
+    {
+      "index": 1149,
+      "anchor": "Contact Person: Lokesh Shah",
+      "stratum": "random",
+      "entities": [
+        {"type": "PERSON", "text": "Lokesh Shah"},
+        {"type": "PERSON", "text": "Soumavo Sarkar"}
+      ]
+    },
+    {"index": 1199, "anchor": "Chairman and Executive Director", "stratum": "random", "entities": []},
+    {"index": 1293, "anchor": "The stakeholders’ relationship committee", "stratum": "random", "entities": []},
+    {"index": 1338, "anchor": "An application, whether physical or electronic", "stratum": "random", "entities": []},
+    {"index": 1585, "anchor": "Together, the BRLMs and the Syndicate Members", "stratum": "random", "entities": []},
+    {"index": 1656, "anchor": "Depository Participant’s Identification Number", "stratum": "random", "entities": []},
+    {"index": 1694, "anchor": "The Institute of Chartered Accountants of India", "stratum": "random", "entities": []},
+    {"index": 1736, "anchor": "Non-resident ordinary account", "stratum": "random", "entities": []},
+    {"index": 1827, "anchor": "Battery Energy Storage System", "stratum": "random", "entities": []},
+    {"index": 2226, "anchor": "Number of Equity Shares of face value", "stratum": "random", "entities": []},
+    {"index": 2750, "anchor": "Range of acquisition price per Equity Share", "stratum": "random", "entities": []},
+    {"index": 3639, "anchor": "Material civil litigations", "stratum": "random", "entities": []},
+    {"index": 3753, "anchor": "Chakan Unit No. 2 (Birdewadi)", "stratum": "random", "entities": []},
+    {"index": 3785, "anchor": "Chakan Unit No. 3 (Khalumbre)", "stratum": "random", "entities": []},
+    {"index": 4076, "anchor": "Percentage", "stratum": "random", "entities": []},
+    {"index": 4102, "anchor": "Provision for bad debt as a percentage", "stratum": "random", "entities": []},
+    {"index": 4163, "anchor": "Three-month period ended June 30, 2025", "stratum": "random", "entities": []},
+
+    {
+      "index": 29,
+      "anchor": "E-mail: cs.connect@kshinternational.com",
+      "stratum": "contact",
+      "entities": [
+        {"type": "EMAIL", "text": "cs.connect@kshinternational.com"},
+        {"type": "URL", "text": "www.kshinternational.com"}
+      ]
+    },
+    {
+      "index": 803,
+      "anchor": "Investor grievance E-mail: kshinternational.ipo@in.mpms.mufg.com",
+      "stratum": "contact",
+      "entities": [
+        {"type": "EMAIL", "text": "kshinternational.ipo@in.mpms.mufg.com"}
+      ]
+    },
+    {
+      "index": 810,
+      "anchor": "Telephone: +91 22 30752929",
+      "stratum": "contact",
+      "entities": [
+        {"type": "PHONE", "text": "+91 22 30752929"},
+        {"type": "PHONE", "text": "+91 22 30752928"},
+        {"type": "PHONE", "text": "+91 22 30752914"}
+      ]
+    },
+    {
+      "index": 874,
+      "anchor": "Telephone: + 91 (20) 6729 5100",
+      "stratum": "contact",
+      "entities": [
+        {"type": "PHONE", "text": "+ 91 (20) 6729 5100"}
+      ]
+    },
+    {
+      "index": 910,
+      "anchor": "Telephone: + 91 8879770456",
+      "stratum": "contact",
+      "entities": [
+        {"type": "PHONE", "text": "+ 91 8879770456"},
+        {"type": "PERSON", "text": "Cherag Gyara"},
+        {"type": "URL", "text": "www.icicibank.com"},
+        {"type": "EMAIL", "text": "cherag.gyara@icicibank.com"}
+      ]
+    },
+    {
+      "index": 917,
+      "anchor": "Email: manisha.shukla@hdfcbank.com",
+      "stratum": "contact",
+      "entities": [
+        {"type": "EMAIL", "text": "manisha.shukla@hdfcbank.com"}
+      ]
+    },
+    {
+      "index": 929,
+      "anchor": "Telephone: + 91 91586 40360",
+      "stratum": "contact",
+      "entities": [
+        {"type": "PHONE", "text": "+ 91 91586 40360"}
+      ]
+    },
+    {
+      "index": 956,
+      "anchor": "Bandra Kurla Complex, Bandra (E) Mumbai – 400 051",
+      "stratum": "contact",
+      "entities": [
+        {"type": "ADDRESS", "text": "Bandra Kurla Complex, Bandra (E) Mumbai – 400 051, Maharashtra, India"}
+      ]
+    },
+    {
+      "index": 1154,
+      "anchor": "E-mail: ksh@icicisecurities.com",
+      "stratum": "contact",
+      "entities": [
+        {"type": "EMAIL", "text": "ksh@icicisecurities.com"}
+      ]
+    },
+    {
+      "index": 4409,
+      "anchor": "E-mail: parag.pansare@kirtanepandit.com",
+      "stratum": "contact",
+      "entities": [
+        {"type": "EMAIL", "text": "parag.pansare@kirtanepandit.com"}
+      ]
+    }
+  ]
+}

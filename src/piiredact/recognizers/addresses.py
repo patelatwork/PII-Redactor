@@ -24,15 +24,27 @@ from ..types import Entity, PIIType
 _STATE_ALT = "|".join(re.escape(s) for s in sorted(INDIAN_STATES, key=len, reverse=True))
 _STREET_ALT = "|".join(re.escape(s) for s in sorted(STREET_TYPES, key=len, reverse=True))
 
-#: Indian postal tail: a 6-digit PIN *followed by* a state and/or "India".
-#: Requiring the geographic confirmation is what keeps registration numbers and
-#: financial figures ("105215W/ W100057") out of the address set -- a bare
-#: 6-digit run is far too common in a prospectus to trust on its own.
-#: A 6-digit PIN, which the extractor may have wrapped mid-number ("400 \n025").
+#: A 6-digit PIN, which extraction may have wrapped mid-number ("400 \n025").
 _PIN = r"(?<![\w,.])\d{3}\s{0,2}\d{3}(?!\w)"
+
+#: Indian postal tail: a 6-digit PIN *confirmed* by geography.  A bare 6-digit
+#: run is far too common in a prospectus to trust on its own, so one of two
+#: confirmations is required:
+#:
+#: 1. a state and/or "India" follows the PIN, or
+#: 2. the PIN closes the paragraph and is introduced by "<Place> – ", the
+#:    standard Indian format.
+#:
+#: Case 2 exists because Word stores each line of an address block as its own
+#: paragraph, so "…Baner Pune – 411 045" and "Maharashtra, India" arrive
+#: separately and the first has no geography after the PIN at all.
 _INDIA_TAIL = re.compile(
-    rf"{_PIN}(?:\s*,?\s*(?:{_STATE_ALT}))?\s*,?\s*India\b"
-    rf"|{_PIN}\s*,?\s*(?:{_STATE_ALT})\b",
+    rf"(?P<pin>{_PIN})(?:\s*,?\s*(?:{_STATE_ALT}))?\s*,?\s*India\b"
+    rf"|(?P<pin2>{_PIN})\s*,?\s*(?:{_STATE_ALT})\b"
+    # The separating dash must be spaced, as it is in "Pune – 410 501".  An
+    # unspaced one belongs to an identifier: the engineer's registration number
+    # "M-140388" is otherwise a perfect match for this rule.
+    rf"|\s[-–]\s?(?P<pin3>{_PIN})[^\S\n]*(?=\n\s*\n|\Z)",
     re.IGNORECASE,
 )
 
@@ -40,6 +52,30 @@ _INDIA_TAIL = re.compile(
 _US_TAIL = re.compile(r",\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?\b")
 
 _STREET_LINE = re.compile(rf"\b\d{{1,5}}[A-Za-z]?\s+(?:[A-Z][\w'.\-]*\s+){{0,5}}(?:{_STREET_ALT})\b")
+
+#: An address line with no postal code at all -- the first line of a block that
+#: Word split ("Gat No. 11/3, 11/4, 11/5, Village Birdewadi").  Three signals
+#: must coincide, because on their own each is common in a filing's tables:
+#: the line starts with a premises number, it names a premises type, and it is
+#: comma-separated the way an address is.
+_PREMISES_START = (
+    r"(?:\d{1,5}[A-Za-z]?(?:\s?[/\-,]\s?\d{1,5}[A-Za-z]?)*"
+    r"|Gat\s+No\.?|S\.\s?no\.?|Plot\s+No\.?|Survey\s+No\.?|Flat\s+No\.?)"
+)
+#: Deliberately excludes "Unit", "Floor", "Block", "Tower" and "Off": this
+#: filing's capacity tables are full of rows like "2 Chakan Unit No. 2".
+_PREMISES_WORDS = (
+    r"Village|Gat|Plot|Survey|Flat|Bunglow|Bungalow|Apartment|Apartments"
+    r"|Society|Residency|Marg|Wing|Building"
+)
+#: The line may open the paragraph or follow an introducing colon
+#: ("His contact details are as set forth below: Gat No. 11/3, ...").
+_PREMISES_OPEN = r"(?:^|(?<=:\s))"
+_PREMISES_LINE = re.compile(
+    rf"{_PREMISES_OPEN}{_PREMISES_START}\b[^\n]*?,[^\n]*?\b(?:{_PREMISES_WORDS})\b[^\n]*$"
+    rf"|{_PREMISES_OPEN}{_PREMISES_START}\b[^\n]*?\b(?:{_PREMISES_WORDS})\b[^\n]*?,[^\n]*$",
+    re.MULTILINE | re.IGNORECASE,
+)
 
 _LABEL_ALT = "|".join(re.escape(s) for s in sorted(ADDRESS_LABELS, key=len, reverse=True))
 _LABEL_RE = re.compile(
@@ -64,6 +100,14 @@ _BOUNDARY = re.compile(
     r"|[:\t]"                                               # after a field label
     r"|\b[A-Za-z]{2,}\d{4,}\b[\s,]*"                        # after a registration number
     r"|(?<!\d)\d{6,8}(?:\s*\n\s*\d{1,2})?(?!\d)[\s,]*"      # after an id column (DIN)
+    # Clauses that introduce an address in running prose.  Without these the
+    # span grows leftwards through the whole sentence ("a company incorporated
+    # on July 30, 1979 under the Companies Act, 1956 and having its Registered
+    # Office at 11/3, ...").
+    r"|\b(?:located|situated)\s+(?:at\s+)?"
+    r"|\boffices?\s+(?:at|in)\s+"
+    r"|\baddress\s*(?:is|of)?\s*[:\-–]?\s*"
+    r"|\bnamely,?\s+"
     r"|\bsee\b",
     re.IGNORECASE,
 )
@@ -79,15 +123,18 @@ class AddressRecognizer:
         spans: list[tuple[int, int, float]] = []
 
         for m in _INDIA_TAIL.finditer(text):
-            pin = re.sub(r"\s", "", m.group(0)[:7])
+            pin = re.sub(r"\s", "", m.group("pin") or m.group("pin2") or m.group("pin3"))
             # Indian PINs never start with 0; this also rejects "100 000" style
             # figures in financial tables.
-            if not pin[:6].isdigit() or pin[0] == "0":
+            if len(pin) != 6 or not pin.isdigit() or pin[0] == "0":
                 continue
             start = _expand_left(text, m.start())
             if start is None:
                 continue
             spans.append((start, m.end(), 0.9))
+
+        for m in _PREMISES_LINE.finditer(text):
+            spans.append((m.start(), m.end(), 0.7))
 
         for m in _US_TAIL.finditer(text):
             start = _expand_left(text, m.start())

@@ -6,21 +6,28 @@ If `Rashi Patil` becomes `John Doe`, then `rashi.patil@gmail.com` becomes
 `john.doe@example.com` and `Rashi` alone, twelve pages later, still becomes
 `John` — everywhere, every run.
 
-Built for the assignment against the attached 126-page **Red Herring
-Prospectus**; the redacted deliverable is
+Built for the assignment against the attached **Red Herring Prospectus**
+(4,639 paragraphs); the redacted deliverable is
 [`output/Red Herring Prospectus - REDACTED.docx`](output/).
 
 ```
-583 entities replaced in 8.8s
-  ORGANIZATION  233   ADDRESS  42
-  PERSON        186   PHONE    35
+666 entities replaced across 4,639 paragraphs in 21s
+  PERSON        264   ADDRESS  51
+  ORGANIZATION  228   PHONE    36
   EMAIL          52   URL      27   DIN  8
 ```
 
-| | Precision | Recall | Accuracy |
+| | Precision | Recall | Token accuracy |
 |---|---:|---:|---:|
-| Prospectus sample (80 hand-labelled entities) | **1.000** | 0.988 | 0.951 (token level) |
-| Synthetic suite (26 entities, types absent from the filing) | **1.000** | 0.962 | 0.985 (token level) |
+| **Held-out sample** (23 entities, drawn *after* development) | **0.955** | **0.913** | 0.979 |
+| Development sample (66 entities, used while building) | 1.000 | 1.000 | 1.000 |
+| Synthetic suite (26 entities, types absent from the filing) | 1.000 | 0.962 | 0.985 |
+
+**Read the held-out row as the honest estimate.** The development sample was used
+iteratively to find and fix defects, so scoring 1.000 on it means the known
+defects are fixed — not that the tool is perfect. The held-out sample was drawn
+at random after the detectors were finished and scored once; its three failures
+are diagnosed and fixed in EVALUATION.md §3.
 
 Full methodology, per-type tables, ablations and error analysis:
 **[EVALUATION.md](EVALUATION.md)**.
@@ -34,12 +41,12 @@ pip install -e ".[ner,service]"
 python -m spacy download en_core_web_sm        # optional; rules-only works too
 
 # redact a document
-piiredact redact "data/input/Red Herring Prospectus.docx.pdf" \
+piiredact redact "data/input/Red Herring Prospectus.docx" \
                  -o "output/Red Herring Prospectus - REDACTED.docx" \
                  --report-dir output
 
 # see what it would redact, without writing a document
-piiredact analyze "data/input/Red Herring Prospectus.docx.pdf"
+piiredact analyze "data/input/Red Herring Prospectus.docx"
 ```
 
 Or over HTTP:
@@ -89,7 +96,10 @@ these read the *shape* of a corporate filing:
   that beats model NER outright.
 - **Addresses** are found by anchoring on the postal tail — a 6-digit PIN
   followed by a state and/or "India", or a US `City, ST 12345` — and expanding
-  left to the nearest boundary.
+  left to the nearest boundary. Word stores each line of an address block as its
+  own paragraph, so two extra rules cover the fragments: a PIN that closes a
+  paragraph after a spaced dash, and a premises line ("Gat No. 11/3, …, Village
+  Birdewadi") that has no postal code at all.
 - **People** are found by the positions filings use: after an honorific, before
   or after a designation (`Managing Director`, `Company Secretary`), after a
   `Contact Person:` label, inside an `OUR PROMOTERS:` list.
@@ -99,7 +109,7 @@ Every candidate is filtered through the same plausibility predicate the rules
 use, and scored *below* deterministic hits so the resolver prefers patterns on
 overlap. **Optional**: with spaCy absent the pipeline logs once and runs
 rules-only (`--no-ner`). spaCy's `ORG` label is **off by default** — measured, it
-cost far more precision than it bought (see EVALUATION.md §3).
+cost far more precision than it bought (EVALUATION.md §6).
 
 **4. Document-wide propagation** (`propagation.py`) — *the layer that matters
 most.* A person is introduced once in a high-signal context and then referred to
@@ -108,8 +118,8 @@ precision problem; the rest is string matching. So pass 1 collects only
 *confident* detections, and pass 2 sweeps the entire document for those names
 plus their predictable short forms (`Kushal Subbayya Hegde` → `Kushal Hegde`;
 `Nuvama Wealth Management Limited` → `Nuvama`), and for `<unknown first name> +
-<confirmed surname>`. Disabling it costs ~10% of all detections, concentrated
-exactly where risk is highest.
+<confirmed surname>`. It supplies 223 of the 666 detections; disabling it costs
+21% of them, concentrated exactly where risk is highest.
 
 **Overlap resolution** (`resolution.py`) — recognizers legitimately collide (an
 address contains a city that NER calls an organisation). Ranked by type priority
@@ -133,26 +143,35 @@ contain.
 Formats are preserved. Real output from the run:
 
 ```
+Cherag Gyara                     -> Vikram Parker
+cherag.gyara@icicibank.com       -> vikram.parker@lighthouseenterprises.example.com
 Kushal Subbayya Hegde            -> Meera Mohan Iyer
 Kushal Hegde                     -> John Doe
 Sarthak Malvadkar                -> Rohan Rao
 cs.connect@kshinternational.com  -> cs.connect@vertextechnologies.example.com
-+ 91 20 4505 3237                -> + 91 67 8296 2757
++ 91 20 45053237                 -> + 91 70 18086749
 www.kshinternational.com         -> www.larkspurindustries.example.com
 KSH International Limited        -> Crestline Traders Limited
 Kirtane & Pandit LLP             -> Amberfield Materials LLP
 ```
 
-Note the country code and spacing survive on the phone, the role mailbox
+The first two lines are the point: a person and *their* e-mail address, detected
+by different recognizers in different paragraphs, resolve to the same fake
+identity. The country code and spacing survive on the phone, the role mailbox
 `cs.connect` survives while its domain does not, and the legal suffixes
 `Limited`/`LLP` are kept so the sentences still read. (`Kushal Hegde` gets its
 own persona rather than `Meera Iyer` because four different promoters share
 those two name tokens — the tool refuses to guess which one is meant, and says
-so in §4 of EVALUATION.md.)
+so in EVALUATION.md.)
 
 **Document IO** (`documents/`) — `.docx` is rewritten **in place at the run
 level**, so bold, sizes, styles, tables, headers and footers all survive; runs
 inside hyperlinks are included, since that is where Word hides e-mail addresses.
+Paragraphs are de-duplicated by XML element identity: a merged table cell is
+returned once per grid position it spans, and this filing yields 5,715 visits
+from 4,639 distinct paragraphs — applying one paragraph's replacements twice
+would rewrite it against offsets the first pass already invalidated.
+
 PDFs are extracted block-wise with PyMuPDF, repaired (the cover-page table comes
 back as `['Email:\ncs.connect@acme.co', 'm Telephone: + 91 20', '45053237']`) and
 materialised as a `.docx` that then goes through the *same* rewriter — one
@@ -165,7 +184,7 @@ substitution implementation, not two.
 | Chose | Over | Because |
 |---|---|---|
 | Custom recognizers | **Microsoft Presidio** | Presidio is the obvious off-the-shelf answer and covers the generic types well. It has no notion of *consistent* surrogates across an entity's short and long forms, which is the assignment's headline requirement, and its Indian-context recognizers would still have needed writing. Building the analyzer directly kept the surrogate/identity logic and the extension point in one place. |
-| spaCy `en_core_web_sm` | transformer NER | 30× faster, no GPU, and on this corpus the rules do the work anyway (EVALUATION.md §3). The model is a config string — swapping to `en_core_web_trf` is one line. |
+| spaCy `en_core_web_sm` | transformer NER | 30× faster, no GPU, and on this corpus the rules do the work anyway (EVALUATION.md §6). The model is a config string — swapping to `en_core_web_trf` is one line. |
 | python-docx run-level rewrite | replace `paragraph.text` | Replacing paragraph text collapses every run and destroys all formatting. A prospectus that comes back unstyled is not a usable deliverable. |
 | PyMuPDF | pdfplumber / pypdf | Markedly cleaner text on this file — pypdf returned double-spaced, mid-word-broken output that no regex could recover from. |
 
@@ -195,29 +214,37 @@ other would be theatre.
 
 Measured, not guessed — every item below comes from the evaluation run.
 
-**False positives: none** on either gold suite under partial matching, across
-876 + 264 tokens including 655 that carry no PII. Under strict matching the only
-errors are 5 address spans that are *wider* than the label — the tool absorbed
-an adjacent field label along with the address. Address left-boundaries have no
-reliable signal and remain the weakest part of the pipeline.
+**On the held-out sample the tool made one false positive and two misses out of
+23 entities**, and all three were real defects rather than labelling disputes:
+`Institute of Chartered Accountants` was allowlisted only in its longer "…of
+India" spelling; `Cherag Gyara` was lost because the greedy name pattern
+swallowed the following field's words and then rejected the whole match; and
+`+ 91 (20) 6729 5100` was missed because the phone pattern disallowed
+parentheses. All three are fixed. EVALUATION.md §3 records the before-and-after
+in full, because a fixed defect found on a held-out sample means that sample is
+spent.
+
+**False positives across the current build: none**, on any of the three suites,
+at either matching mode — over 1,605 tokens of which 1,167 carry no PII.
 
 **False negatives, in full:**
 
-- **A person named exactly once, with no structural cue and no other mention.**
-  `Dinesh Hirachand \nMunot` sits alone in a table cell; nothing anchors it and
-  nothing to propagate from. This is the pipeline's characteristic failure.
 - **Initials plus surname** — `DM Shetty`, `SA Shetty`. The known-surname rule
-  needs a capitalised *word* before the surname; accepting `[A-Z]{2}` would
-  match table headers.
+  needs a capitalised *word* before the surname; accepting `[A-Z]{2}` would match
+  table headers.
+- **A middle initial between first name and surname** — `Narayana B. Shetty`
+  breaks the two-token adjacency the surname rule relies on.
 - **`Ananya Deshpande`** in free prose (synthetic suite) — the small spaCy model
   misses it. The clearest case for upgrading the NER layer.
-- **A DIN split across lines with no nearby label or designation.** Recovered
-  here by anchoring on the director's designation, but a differently-shaped
-  table would break it again.
-- **A factory unit's name** (`Chakan Unit No. 2 (Birdewadi)`) — no PIN, no
-  state, so not treated as an address. Arguably correct.
+- **A company whose name carries no legal suffix** — `Trilegal` is never written
+  as "Trilegal LLP", so nothing seeds the single-token short form.
+- **A company name split across three table cells** — `KSH Distriparks Private
+  Limited`; `KSH` is redacted by propagation, the remainder spans paragraph
+  boundaries that recognizers deliberately cannot cross.
+- **A factory unit's name** (`Chakan Unit No. 2 (Birdewadi)`) — no street
+  locator, no PIN, so not treated as an address. Arguably correct.
 
-The general shape: the tool is very safe against over-redaction and its residual
+The general shape: the tool is very safe against over-redaction, and its residual
 risk is a rare, singly-mentioned name in an unstructured position.
 
 ---
@@ -350,13 +377,13 @@ src/piiredact/
   cli.py            argparse CLI (no framework dependency)
 service/            FastAPI app + a single-page upload UI
 eval/               build_gold.py · evaluate.py · gold/ (hand-written labels)
-tests/              91 tests: detection, precision, surrogates, docx IO, HTTP
+tests/              92 tests: detection, precision, surrogates, docx IO, HTTP
 output/             the redacted deliverable + audit artefacts
 ```
 
 ```bash
 make install-ner    # install with the spaCy layer
-make test           # 91 tests
+make test           # 92 tests
 make lint           # ruff
 make eval           # rebuild gold, score, write eval/results.json
 make redact         # redact the prospectus
@@ -369,9 +396,12 @@ make serve          # run the API locally
 
 Stated plainly so the numbers are not read as stronger than they are:
 
-- 106 gold entities is a **small sample**; per-type figures for rarer types rest
-  on 1–3 instances. Stratified, not random, so it deliberately over-represents
-  PII-dense sections.
+- **The held-out estimate rests on 23 entities**, so the interval around
+  0.955 / 0.913 is wide. 115 gold entities across all three suites; per-type
+  figures for rarer types rest on 1–3 instances.
+- **The held-out sample has been spent** — its failures were fixed, so current
+  scores on it are development scores. A fresh draw would be needed to
+  re-estimate.
 - Single annotator, no inter-annotator agreement. Address boundaries are a
   judgement call, which is why both strict and partial matching are reported.
 - One document, one domain, one locale — an Indian corporate filing plus English
@@ -381,6 +411,6 @@ Stated plainly so the numbers are not read as stronger than they are:
   original page layout, table structure and images are not. `.docx` input keeps
   its formatting; `.docx` in / `.docx` out is the production path.
 - Text inside embedded images is not read; OCR is out of scope.
-- Runtime is ~9 s for the 126-page filing single-threaded, dominated by spaCy;
-  `--no-ner` does the same document in ~1.4 s and, on this corpus, scores
-  identically (EVALUATION.md §3).
+- Runtime is ~21 s for the 4,639-paragraph filing single-threaded; `--no-ner`
+  does the same document in ~15 s and, on this corpus, scores identically
+  (EVALUATION.md §6).

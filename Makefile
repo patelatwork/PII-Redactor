@@ -4,7 +4,7 @@
 # On Windows without make, run the commands under each target directly, or use
 # `pwsh -File run.ps1 <target>`.
 
-PDF ?= data/input/Red Herring Prospectus.docx.pdf
+DOC ?= data/input/Red Herring Prospectus.docx
 OUT ?= output/Red Herring Prospectus - REDACTED.docx
 PY  ?= python
 
@@ -31,10 +31,10 @@ eval:  ## rebuild the gold set and score the pipeline
 	$(PY) eval/evaluate.py
 
 redact:  ## redact the prospectus into output/
-	$(PY) -m piiredact.cli redact "$(PDF)" -o "$(OUT)" --report-dir output
+	$(PY) -m piiredact.cli redact "$(DOC)" -o "$(OUT)" --report-dir output
 
 analyze:  ## detect only, print a summary
-	$(PY) -m piiredact.cli analyze "$(PDF)"
+	$(PY) -m piiredact.cli analyze "$(DOC)"
 
 serve:  ## run the HTTP service locally on :8000
 	$(PY) -m uvicorn service.app:app --reload --port 8000

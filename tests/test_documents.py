@@ -83,6 +83,35 @@ def test_rewrite_paragraph_handles_entity_spanning_runs(tmp_path):
     assert paragraph_text(paragraph) == "John Doe rules"
 
 
+def test_merged_table_cells_are_visited_once(tmp_path):
+    """Regression: a merged cell is returned once per grid position it spans.
+
+    Yielding it twice made the rewriter apply the same replacements a second
+    time against offsets the first pass had already invalidated, mangling the
+    text ("MEERA MOHAN IYER" -> "MEERA MOHAN IYERRA").
+    """
+    document = Document()
+    table = document.add_table(rows=1, cols=3)
+    table.rows[0].cells[0].merge(table.rows[0].cells[2])
+    table.rows[0].cells[0].text = "Contact Person: Rashi Prakash Patil and others"
+    path = tmp_path / "merged.docx"
+    document.save(str(path))
+
+    paragraphs = list(iter_paragraphs(load(path)))
+    assert len({id(p._p) for p in paragraphs}) == len(paragraphs)
+
+    out = tmp_path / "out.docx"
+    redact_document(path, out, Redactor(RULES_ONLY))
+    cell_text = next(
+        t for t in (paragraph_text(p) for p in iter_paragraphs(load(out))) if t.strip()
+    )
+    assert "Rashi" not in cell_text
+    # Applied exactly once: the surrounding text is untouched and no stray
+    # fragments of the original name are left behind.
+    assert cell_text.startswith("Contact Person: ")
+    assert cell_text.endswith(" and others")
+
+
 def test_rewrite_paragraph_applies_multiple_edits_in_one_run():
     document = Document()
     paragraph = document.add_paragraph()
