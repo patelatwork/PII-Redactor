@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PII Redaction Service</title>
+<style>
+  :root {
+    --bg: #fbfbfa; --fg: #1a1a19; --muted: #6b6b66; --line: #e2e1dd;
+    --accent: #2f6f4e; --card: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#17171a; --fg:#eceae5; --muted:#a1a09a; --line:#33333a;
+            --accent:#7dc79c; --card:#1f1f23; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2.5rem 1.25rem; background:var(--bg); color:var(--fg);
+         font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size:1.6rem; margin:0 0 .35rem; letter-spacing:-.01em; }
+  p.sub { color:var(--muted); margin:0 0 2rem; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:12px;
+            padding:1.25rem 1.5rem; margin-bottom:1.25rem; }
+  h2 { font-size:1rem; margin:0 0 .75rem; text-transform:uppercase;
+       letter-spacing:.06em; color:var(--muted); font-weight:600; }
+  input[type=file], textarea { width:100%; font:inherit; color:inherit;
+       background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.6rem; }
+  textarea { min-height:8rem; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+             font-size:.9rem; resize:vertical; }
+  button { margin-top:.85rem; font:inherit; font-weight:600; color:#fff;
+           background:var(--accent); border:0; border-radius:8px;
+           padding:.6rem 1.15rem; cursor:pointer; }
+  button:disabled { opacity:.55; cursor:progress; }
+  pre { background:var(--bg); border:1px solid var(--line); border-radius:8px;
+        padding:.85rem; overflow-x:auto; font-size:.85rem; margin:.85rem 0 0; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .note { color:var(--muted); font-size:.85rem; margin-top:.6rem; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PII Redaction Service</h1>
+  <p class="sub">Upload a <code>.docx</code>, <code>.pdf</code> or <code>.txt</code>; get back a
+     <code>.docx</code> with every detected identifier replaced by a consistent fake one.</p>
+
+  <section>
+    <h2>Redact a document</h2>
+    <form id="upload">
+      <input type="file" name="file" accept=".docx,.pdf,.txt,.md" required>
+      <button type="submit">Redact and download</button>
+    </form>
+    <p class="note" id="upload-status"></p>
+  </section>
+
+  <section>
+    <h2>Try some text</h2>
+    <textarea id="text">Contact Person: Rashi Patil, Managing Director of Acme Wire Industries Limited.
+Email rashi.patil@acme.co.in, telephone +91 20 4505 3237.
+Registered office: 12, Tower 2, Pallod Farms, Baner, Pune - 411 045 Maharashtra, India.
+Card 4111 1111 1111 1111, SSN 214-77-3910, last seen from 203.0.113.47.
+Order 4455 6677 8899 and ticket 2023-77412 must NOT be redacted.</textarea>
+    <button id="run">Redact text</button>
+    <pre id="out" hidden></pre>
+  </section>
+
+  <p class="note">API docs at <a href="/docs">/docs</a> &middot; health at <a href="/health">/health</a></p>
+</main>
+
+<script>
+const status = document.getElementById('upload-status');
+
+document.getElementById('upload').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = event.target.querySelector('button');
+  button.disabled = true;
+  status.textContent = 'Redacting…';
+  try {
+    const response = await fetch('/redact', { method: 'POST', body: new FormData(event.target) });
+    if (!response.ok) throw new Error((await response.json()).detail || response.statusText);
+    const blob = await response.blob();
+    const name = (response.headers.get('content-disposition') || '')
+      .match(/filename="?([^"]+)"?/)?.[1] || 'redacted.docx';
+    const url = URL.createObjectURL(blob);
+    const link = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.appendChild(link); link.click(); link.remove();
+    URL.revokeObjectURL(url);
+    status.textContent = `Done — ${response.headers.get('X-PII-Entities-Redacted')} entities replaced.`;
+  } catch (error) {
+    status.textContent = 'Failed: ' + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById('run').addEventListener('click', async (event) => {
+  const button = event.target;
+  const out = document.getElementById('out');
+  button.disabled = true;
+  try {
+    const response = await fetch('/redact/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: document.getElementById('text').value })
+    });
+    const data = await response.json();
+    out.hidden = false;
+    out.textContent = data.text + '\n\n--- counts ---\n' + JSON.stringify(data.counts, null, 2);
+  } catch (error) {
+    out.hidden = false;
+    out.textContent = 'Failed: ' + error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

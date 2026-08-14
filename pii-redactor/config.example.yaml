@@ -1,0 +1,61 @@
+# Example configuration. Pass with `piiredact redact --config config.yaml`.
+# Every field is optional; omitted fields keep the defaults in
+# src/piiredact/config.py. The same settings are available as PIIREDACT_*
+# environment variables, which is what the container image uses.
+
+# Which PII types to detect and replace. Omit for all of them.
+enabled_types:
+  - PERSON
+  - EMAIL
+  - PHONE
+  - ORGANIZATION
+  - ADDRESS
+  - DATE_OF_BIRTH
+  - SSN
+  - CREDIT_CARD
+  - IP_ADDRESS
+  - URL
+  - PAN
+  - AADHAAR
+  - DIN
+  - PASSPORT
+
+# Determines which fake values are generated. Same seed + same input => same
+# output, forever. Rotate per customer/tenant so two tenants never receive the
+# same surrogate for the same real name.
+seed: change-me-per-tenant
+
+# spaCy model for the recall layer. Set to null (or leave spaCy uninstalled) to
+# run rules-only -- see EVALUATION.md for what that costs on each corpus.
+spacy_model: en_core_web_sm
+
+# Accept spaCy's ORG label. Off by default: measured on a corporate filing it
+# cost far more precision than it bought in recall. Turn on for free prose.
+ner_organizations: false
+
+# Sweep confirmed names across the whole document. This is where most of the
+# recall comes from; turn it off only to debug a specific detection.
+enable_propagation: true
+
+# Drop detections below this confidence.
+min_score: 0.4
+
+# Redact regulators, exchanges and government bodies too (SEBI, BSE, RBI, ...).
+# Off by default: they are public institutions, not private parties.
+redact_public_institutions: false
+
+# Write mapping.json, which reverses the redaction. This file is as sensitive as
+# the original document. Set false for one-way anonymisation.
+emit_mapping: true
+
+# Names the tool should never redact, beyond the built-in public-body allowlist.
+extra_allow:
+  - acme corporation
+
+# Literal strings to always redact, by type -- an escape hatch for values the
+# detectors miss (a project codename, an internal system name).
+extra_deny:
+  PERSON:
+    - Project Falcon
+  ORGANIZATION:
+    - Internal Ledger System

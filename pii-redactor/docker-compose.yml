@@ -1,0 +1,32 @@
+services:
+  redactor:
+    build:
+      context: .
+      args:
+        INSTALL_NER: "true"
+    image: piiredact:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # Rotate per tenant: the seed determines which fake values are generated,
+      # so two tenants sharing a seed would get the same surrogate for the same
+      # real name.
+      PIIREDACT_SEED: "${PIIREDACT_SEED:-change-me-in-production}"
+      PIIREDACT_SPACY_MODEL: "en_core_web_sm"
+      PIIREDACT_NER_ORGS: "false"
+      PIIREDACT_REDACT_PUBLIC_INSTITUTIONS: "false"
+    read_only: true
+    tmpfs:
+      # Uploads are written here and deleted after each response; tmpfs keeps
+      # personal data off disk entirely.
+      - /tmp:size=256m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1g
+    restart: unless-stopped

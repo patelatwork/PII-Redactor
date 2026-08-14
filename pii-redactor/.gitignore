@@ -1,0 +1,19 @@
+# Redaction artefacts contain (or reverse) personal data -- never commit them.
+output/
+eval/gold/*_gold.json
+eval/results.json
+mapping.json
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+.DS_Store

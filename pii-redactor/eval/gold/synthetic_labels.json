@@ -1,0 +1,71 @@
+{
+  "_about": [
+    "Self-contained ground truth for the PII types the prospectus does not contain.",
+    "The Red Herring Prospectus is an Indian corporate filing: it has names, companies,",
+    "addresses, e-mails and phone numbers in abundance, but no Social Security Numbers, no",
+    "credit cards, no IP addresses and no dates of birth. Reporting 'recall = n/a' for four",
+    "of the nine required types would say nothing about whether they work, so this suite",
+    "exercises them on ticket-log style text of the shape the assignment describes.",
+    "",
+    "Every record deliberately mixes true positives with near-miss decoys - order numbers,",
+    "ticket ids, invoice totals, version strings, business dates - so the same corpus scores",
+    "precision as well as recall. All identifiers are synthetic: the card numbers are the",
+    "public test values, the SSNs are structurally valid but arbitrary, the Aadhaar numbers",
+    "carry a correct Verhoeff digit."
+  ],
+  "records": [
+    {
+      "id": "ticket-1001",
+      "stratum": "synthetic_us",
+      "text": "Ticket #48219 opened 2024-03-11 by agent desk 7.\nCustomer: Marcus Whitfield, date of birth 04/17/1982.\nHe called from +1 415-555-0182 and confirmed his SSN 214-77-3910.\nRefund issued to card 4111 1111 1111 1111 (expiring 08/27).\nBackup card on file: 5555-5555-5555-4444.\nLast login recorded from 203.0.113.47 at 09:12 UTC; earlier session from 2001:0db8:85a3:0000:0000:8a2e:0370:7334.\nOrder 4455 6677 8899 was shipped on March 14, 2024. Invoice total 1,240.75.\nAgent note: escalated per policy 3.2.1.4, see runbook section 12.",
+      "entities": [
+        {"type": "PERSON", "text": "Marcus Whitfield"},
+        {"type": "DATE_OF_BIRTH", "text": "04/17/1982"},
+        {"type": "PHONE", "text": "+1 415-555-0182"},
+        {"type": "SSN", "text": "214-77-3910"},
+        {"type": "CREDIT_CARD", "text": "4111 1111 1111 1111"},
+        {"type": "CREDIT_CARD", "text": "5555-5555-5555-4444"},
+        {"type": "IP_ADDRESS", "text": "203.0.113.47"},
+        {"type": "IP_ADDRESS", "text": "2001:0db8:85a3:0000:0000:8a2e:0370:7334"}
+      ]
+    },
+    {
+      "id": "ticket-1002",
+      "stratum": "synthetic_us",
+      "text": "Escalation from Priya Raghavan (Social Security Number: 501889274).\nMailing address: 1420 Kensington Avenue, Springfield, IL 62704.\nReachable on (312) 555-0147 or priya.raghavan@northwind-supply.com.\nAmex on file 3782 822463 10005. Born on 22 November 1975.\nShe referenced order number 9087654321 and ticket 2023-77412.\nThe device reported firmware 10.4.2.1 and connected via 198.51.100.9.",
+      "entities": [
+        {"type": "PERSON", "text": "Priya Raghavan"},
+        {"type": "SSN", "text": "501889274"},
+        {"type": "ADDRESS", "text": "1420 Kensington Avenue, Springfield, IL 62704"},
+        {"type": "PHONE", "text": "(312) 555-0147"},
+        {"type": "EMAIL", "text": "priya.raghavan@northwind-supply.com"},
+        {"type": "CREDIT_CARD", "text": "3782 822463 10005"},
+        {"type": "DATE_OF_BIRTH", "text": "22 November 1975"},
+        {"type": "IP_ADDRESS", "text": "198.51.100.9"}
+      ]
+    },
+    {
+      "id": "ticket-1003",
+      "stratum": "synthetic_in",
+      "text": "KYC review for Ananya Deshpande, employed at Silverpine Components Private Limited.\nPAN: ABCPK7890L. Aadhaar 2345 6789 0124. Passport No: M1234567.\nDIN: 08123456. Date of birth: 12/04/1991.\nRegistered at 42, Shanti Residency, Bhandarkar Road, Pune – 411 004 Maharashtra, India.\nContact: +91 98200 12345, e-mail ananya.deshpande@silverpine.co.in.\nThe agreement dated December 10, 2025 and the certificate dated March 3, 2024 are on file.\nGST invoice 27AAACS1234F1Z5 for 4,50,000.00 was raised against purchase order 1234567890123456.",
+      "entities": [
+        {"type": "PERSON", "text": "Ananya Deshpande"},
+        {"type": "ORGANIZATION", "text": "Silverpine Components Private Limited"},
+        {"type": "PAN", "text": "ABCPK7890L"},
+        {"type": "AADHAAR", "text": "2345 6789 0124"},
+        {"type": "PASSPORT", "text": "M1234567"},
+        {"type": "DIN", "text": "08123456"},
+        {"type": "DATE_OF_BIRTH", "text": "12/04/1991"},
+        {"type": "ADDRESS", "text": "42, Shanti Residency, Bhandarkar Road, Pune – 411 004 Maharashtra, India"},
+        {"type": "PHONE", "text": "+91 98200 12345"},
+        {"type": "EMAIL", "text": "ananya.deshpande@silverpine.co.in"}
+      ]
+    },
+    {
+      "id": "ticket-1004-decoys",
+      "stratum": "synthetic_negative",
+      "text": "Order 1234 5678 9012 3456 was cancelled and ticket 555-12-3456789 closed.\nThe invoice reference 400-25-1000 relates to fiscal 2025 and the meeting dated 15/08/2024.\nBuild 6.011.111.111 shipped with schema version 3.47.2.1.\nTotal payable 5,55,555.00 against PO 4,111,111.11 as at March 31, 2024.\nThe policy is described in Regulation 6(1) of the SEBI ICDR Regulations, 2018.\nPlease quote your PAN and Aadhaar when contacting the Registrar of Companies.",
+      "entities": []
+    }
+  ]
+}

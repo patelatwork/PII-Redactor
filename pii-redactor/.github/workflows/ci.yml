@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported version and the current default. The NER extra is
+        # installed only on one of them, so the rules-only path stays tested.
+        python-version: ["3.10", "3.12"]
+        include:
+          - python-version: "3.12"
+            install-ner: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,service]"
+
+      - name: Install NER extra
+        if: matrix.install-ner
+        run: |
+          pip install -e ".[ner]"
+          python -m spacy download en_core_web_sm
+
+      - name: Lint
+        run: ruff check src service eval tests
+
+      - name: Test
+        run: pytest --cov=piiredact --cov-report=term-missing
+
+  evaluate:
+    # The gold set is derived from a document that is not in the repository, so
+    # this job only runs where that document is available.
+    runs-on: ubuntu-latest
+    if: hashFiles('data/input/*.pdf') != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          pip install -e ".[ner]"
+          python -m spacy download en_core_web_sm
+          python eval/build_gold.py
+          python eval/evaluate.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: eval/results.json
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t piiredact:ci .
+      - name: Smoke test the service
+        run: |
+          docker run -d --name redactor -p 8000:8000 piiredact:ci
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:8000/health
+          printf 'Mr. Rashi Patil, rashi@acme.co.in' > ticket.txt
+          curl -sf -X POST -F 'file=@ticket.txt' http://localhost:8000/redact -o out.docx
+          test -s out.docx
+          ! grep -qa 'Rashi' out.docx
+          docker rm -f redactor
