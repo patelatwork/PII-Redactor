@@ -48,6 +48,23 @@ def test_short_form_agrees_with_full_name():
     assert short == [full[0], full[2]]
 
 
+def test_partial_person_names_resolve_to_the_same_canonical_identity():
+    factory = SurrogateFactory(RULES_ONLY)
+    factory.prime(Redactor(RULES_ONLY).analyze("Mr. Rashi Prakash Patil, Managing Director."))
+    canonical = factory.surrogate(PIIType.PERSON, "Rashi Prakash Patil")
+    assert factory.surrogate(PIIType.PERSON, "Rashi") == canonical.split()[0]
+    assert factory.surrogate(PIIType.PERSON, "Patil") == canonical.split()[2]
+    assert factory.surrogate(PIIType.PERSON, "Rashi Patil") == canonical.split()[0] + " " + canonical.split()[2]
+
+
+def test_company_short_name_resolves_to_the_same_canonical_identity():
+    factory = SurrogateFactory(RULES_ONLY)
+    factory.prime(Redactor(RULES_ONLY).analyze("Nuvama Wealth Management Limited is the lead investor."))
+    canonical = factory.surrogate(PIIType.ORGANIZATION, "Nuvama Wealth Management Limited")
+    assert factory.surrogate(PIIType.ORGANIZATION, "Nuvama") == canonical
+    assert factory.surrogate(PIIType.ORGANIZATION, "Nuvama Wealth Management") == canonical
+
+
 def test_email_local_part_follows_the_person():
     out = redact("Mr. Rashi Prakash Patil signed. Write to rashi.patil@acme.co.in.")
     person = out.split("Mr. ")[1].split(" signed")[0].lower().split()

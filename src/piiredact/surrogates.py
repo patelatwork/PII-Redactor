@@ -30,6 +30,26 @@ from .config import ROLE_MAILBOX_STEMS, RedactionConfig
 from .lexicons import ORG_SUFFIXES
 from .recognizers.patterns import luhn_ok
 from .recognizers.propagation import PersonIdentityIndex, normalise
+
+
+class OrganizationIdentityIndex:
+    """Maps shorter org mentions back to the canonical confirmed company name."""
+
+    def __init__(self, canonicals: list[str] | tuple[str, ...] | set[str]) -> None:
+        self._canonicals: list[tuple[frozenset[str], str]] = []
+        for org in sorted({normalise(c) for c in canonicals}, key=len, reverse=True):
+            keys = frozenset(t.lower() for t in org.split())
+            if any(keys <= existing for existing, _ in self._canonicals):
+                continue
+            self._canonicals.append((keys, org))
+
+    def resolve(self, mention: str) -> str:
+        mention = normalise(mention)
+        tokens = frozenset(t.lower() for t in mention.split())
+        matches = [name for keys, name in self._canonicals if tokens <= keys]
+        if len(matches) == 1:
+            return matches[0]
+        return mention
 from .types import Entity, PIIType
 
 # --------------------------------------------------------------------------
@@ -129,22 +149,31 @@ class SurrogateFactory:
         self.config = config or RedactionConfig()
         self._cache: dict[tuple[str, str], str] = {}
         self._person_index = PersonIdentityIndex([])
+        self._organization_index = OrganizationIdentityIndex([])
         self._person_personas: dict[str, list[str]] = {}
 
     # -- identity priming ------------------------------------------------
 
     def prime(self, entities: list[Entity]) -> None:
-        """Register the canonical person names before any substitution.
+        """Register the canonical identities before any substitution.
 
         Called once per document so that short mentions and e-mail local parts
-        can be rendered from the same persona as the full name.
+        can be rendered from the same persona as the full name, and shortened
+        organisation names map to the same canonical company identity.
         """
-        canonicals = {
+        person_canonicals = {
             normalise(e.text).title() if e.text.isupper() else normalise(e.text)
             for e in entities
             if e.type is PIIType.PERSON
         }
-        self._person_index = PersonIdentityIndex(canonicals)
+        self._person_index = PersonIdentityIndex(person_canonicals)
+
+        org_canonicals = {
+            normalise(e.text)
+            for e in entities
+            if e.type is PIIType.ORGANIZATION
+        }
+        self._organization_index = OrganizationIdentityIndex(org_canonicals)
 
     # -- public API ------------------------------------------------------
 
@@ -200,11 +229,16 @@ class SurrogateFactory:
         return persona
 
     def _organization(self, value: str) -> str:
-        tokens = normalise(value).split()
+        mention = normalise(value)
+        canonical = self._organization_index.resolve(mention)
+        if canonical != mention and canonical.lower() != mention.lower():
+            return self._organization(canonical)
+
+        tokens = canonical.split()
         suffix: list[str] = []
         while tokens and tokens[-1].lower().strip(".,") in _SUFFIX_TOKENS:
             suffix.insert(0, tokens.pop())
-        core_key = " ".join(tokens).lower() or normalise(value).lower()
+        core_key = " ".join(tokens).lower() or canonical.lower()
         stream = self._stream(PIIType.ORGANIZATION, core_key)
         core = f"{stream.pick(COMPANY_HEADS)} {stream.pick(COMPANY_TAILS)}"
         out = " ".join([core, *suffix]) if suffix else core

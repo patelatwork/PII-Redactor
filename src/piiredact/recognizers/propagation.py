@@ -97,6 +97,9 @@ def person_variants(name: str) -> set[str]:
     """Short forms of a full name that are still identifying."""
     tokens = normalise(name).split()
     variants = {" ".join(tokens)}
+    if len(tokens) >= 2:
+        variants.add(tokens[0])
+        variants.add(tokens[-1])
     if len(tokens) >= 3:
         variants.add(f"{tokens[0]} {tokens[-1]}")
         for i in range(len(tokens) - 1):
@@ -172,11 +175,17 @@ def surname_patterns(names: Iterable[str]) -> set[str]:
 
 
 def _variant_is_safe(variant: str) -> bool:
-    if len(variant) < 6 or len(variant.split()) < 2:
+    parts = variant.split()
+    if not parts:
         return False
     if variant.lower() in PERSON_STOP_PHRASES:
         return False
-    return not any(t.strip(".,").lower() in PERSON_STOP_TOKENS for t in variant.split())
+    if len(parts) == 1:
+        token = parts[0].strip(".,")
+        return len(token) >= 3 and token.isalpha() and token.lower() not in PERSON_STOP_TOKENS
+    if len(variant) < 6:
+        return False
+    return not any(t.strip(".,").lower() in PERSON_STOP_TOKENS for t in parts)
 
 
 def _variant_pattern(variants: Iterable[str]) -> re.Pattern[str] | None:
